@@ -11,7 +11,7 @@ export function ProgressTargets({ targets }: { targets: Target[] }) {
   return (
     <section>
       <SectionHeader title="Progress Against Monthly Targets" subtitle="How this period tracks toward the monthly goal" />
-      <Card className="animate-rise grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
+      <Card className="animate-rise grid grid-cols-2 gap-5 p-5">
         {targets.map((t) => {
           const pct = Math.min(100, (t.value / t.target) * 100);
           const over = t.value >= t.target;

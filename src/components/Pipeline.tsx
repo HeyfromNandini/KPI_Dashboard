@@ -42,7 +42,7 @@ export function Pipeline({ counts }: { counts: Record<LeadStage, number> }) {
             );
           })}
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {STAGE_ORDER.map((stage) => (
             <div key={stage} className="rounded-xl bg-(--color-canvas) p-3">
               <div className="flex items-center gap-1.5">

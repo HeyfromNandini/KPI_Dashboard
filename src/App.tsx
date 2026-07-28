@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DateFilter } from './components/DateFilter';
 import { ExecutiveSummary } from './components/ExecutiveSummary';
-import { SalesFunnel } from './components/SalesFunnel';
 import { IndustryPerformance } from './components/IndustryPerformance';
 import { CampaignPerformance } from './components/CampaignPerformance';
 import { Pipeline } from './components/Pipeline';
@@ -74,13 +73,18 @@ export default function App() {
       </header>
 
       <main className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-8">
-        <ExecutiveSummary summary={summary} />
-        <SalesFunnel stages={funnel} />
+        <ExecutiveSummary summary={summary} funnel={funnel} />
         <ChartsSection series={series} industryRows={industryRows} />
-        <ProgressTargets targets={targets} />
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Pipeline counts={pipelineCounts} />
+          </div>
+          <ProgressTargets targets={targets} />
+        </div>
+
         <IndustryPerformance rows={industryRows} />
         <CampaignPerformance rows={campaignRows} />
-        <Pipeline counts={pipelineCounts} />
         <WeeklyNotes reviews={WEEKLY_REVIEWS} />
 
         <footer className="pb-4 pt-2 text-center text-[12px] text-(--color-ink-faint)">
