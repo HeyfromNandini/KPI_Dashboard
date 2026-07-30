@@ -34,6 +34,20 @@ function getOpt(row: Row, ...aliases: string[]): string | undefined {
   return v || undefined;
 }
 
+/**
+ * Normalizes a free-text key for matching (e.g. linking a lead's "Campaign" cell to a
+ * Campaign row's ID/Name). Lowercases, trims, collapses whitespace, and unifies dash
+ * variants (–, —, −) to a plain hyphen so small copy/paste differences (a common issue
+ * when pasting from docs or auto-correct turning "-" into an en-dash) don't break the match.
+ */
+function normalizeKey(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[\u2010-\u2015\u2212]/g, '-')
+    .replace(/\s+/g, ' ');
+}
+
 // Keyword hints used to bucket free-text industry/niche values into a finite category
 // when the sheet doesn't already use one of INDUSTRY_CATEGORIES verbatim.
 const INDUSTRY_KEYWORDS: [string, Industry][] = [
@@ -117,8 +131,8 @@ function normalizeStage(raw: string, dates: Record<string, string | null>): Lead
 export function mapRowsToLeads(rows: Row[], campaigns: Campaign[]): Lead[] {
   const campaignByKey = new Map<string, string>();
   for (const c of campaigns) {
-    campaignByKey.set(c.id.toLowerCase(), c.id);
-    campaignByKey.set(c.name.toLowerCase(), c.id);
+    campaignByKey.set(normalizeKey(c.id), c.id);
+    campaignByKey.set(normalizeKey(c.name), c.id);
   }
 
   return rows
@@ -136,7 +150,7 @@ export function mapRowsToLeads(rows: Row[], campaigns: Campaign[]): Lead[] {
       const lostDate = parseDate(get(row, 'lost date', 'lostdate', 'closed lost date'));
 
       const rawCampaign = get(row, 'campaign id', 'campaignid', 'campaign');
-      const campaignId = campaignByKey.get(rawCampaign.toLowerCase()) ?? (rawCampaign || 'unassigned');
+      const campaignId = campaignByKey.get(normalizeKey(rawCampaign)) ?? (rawCampaign || 'unassigned');
 
       const stage = normalizeStage(get(row, 'stage', 'status'), {
         emailSentDate,
