@@ -38,6 +38,17 @@ export function rangeForPreset(preset: PresetKey, custom?: DateRange): DateRange
   }
 }
 
+export function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 export function formatRangeLabel(range: DateRange): string {
   const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const sameDay = startOfDay(range.from).getTime() === startOfDay(range.to).getTime();

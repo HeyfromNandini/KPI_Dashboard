@@ -1,28 +1,34 @@
 import { useMemo, useState } from 'react';
 import { DateFilter } from './components/DateFilter';
 import { ExecutiveSummary } from './components/ExecutiveSummary';
+import { FunnelConversion } from './components/FunnelConversion';
+import { RevenueKpis } from './components/RevenueKpis';
 import { IndustryPerformance } from './components/IndustryPerformance';
 import { CampaignPerformance } from './components/CampaignPerformance';
+import { LeadDirectory } from './components/LeadDirectory';
 import { Pipeline } from './components/Pipeline';
 import { ChartsSection } from './components/ChartsSection';
 import { ProgressTargets } from './components/ProgressTargets';
 import { WeeklyNotes } from './components/WeeklyNotes';
-import { LEADS, CAMPAIGNS, WEEKLY_REVIEWS } from './data/mockData';
+import { useDashboardData } from './hooks/useDashboardData';
 import {
   computeCampaignPerformance,
   computeExecutiveSummary,
   computeFunnel,
   computeIndustryPerformance,
+  computeLeadDirectory,
   computePipeline,
+  computeRevenue,
   computeTimeSeries,
 } from './lib/analytics';
-import { rangeForPreset } from './lib/dateRange';
+import { formatDateTime, rangeForPreset } from './lib/dateRange';
 import type { DateRange, PresetKey } from './types';
-import { LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [preset, setPreset] = useState<PresetKey>('month');
   const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+  const { leads, campaigns, weeklyReviews, loading, error, isSample, lastUpdated } = useDashboardData();
 
   const range = useMemo(() => rangeForPreset(preset, customRange), [preset, customRange]);
 
@@ -31,12 +37,17 @@ export default function App() {
     if (next) setCustomRange(next);
   }
 
-  const summary = useMemo(() => computeExecutiveSummary(LEADS, range), [range]);
-  const funnel = useMemo(() => computeFunnel(LEADS, range), [range]);
-  const industryRows = useMemo(() => computeIndustryPerformance(LEADS, range), [range]);
-  const campaignRows = useMemo(() => computeCampaignPerformance(LEADS, CAMPAIGNS, range), [range]);
-  const pipelineCounts = useMemo(() => computePipeline(LEADS, range), [range]);
-  const series = useMemo(() => computeTimeSeries(LEADS, range), [range]);
+  const summary = useMemo(() => computeExecutiveSummary(leads, range), [leads, range]);
+  const funnel = useMemo(() => computeFunnel(leads, range), [leads, range]);
+  const industryRows = useMemo(() => computeIndustryPerformance(leads, range), [leads, range]);
+  const campaignRows = useMemo(
+    () => computeCampaignPerformance(leads, campaigns, range),
+    [leads, campaigns, range],
+  );
+  const pipelineCounts = useMemo(() => computePipeline(leads, range), [leads, range]);
+  const series = useMemo(() => computeTimeSeries(leads, range), [leads, range]);
+  const revenue = useMemo(() => computeRevenue(leads, range), [leads, range]);
+  const leadDirectory = useMemo(() => computeLeadDirectory(leads, range), [leads, range]);
 
   const targets = useMemo(
     () => [
@@ -68,12 +79,50 @@ export default function App() {
               </p>
             </div>
           </div>
-          <DateFilter preset={preset} customRange={customRange} onChange={handleDateChange} />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 rounded-full border border-(--color-border) bg-(--color-surface) px-3 py-1.5 text-[12px] text-(--color-ink-faint) shadow-(--shadow-card)">
+              {loading ? <RefreshCw size={13} className="animate-spin" /> : <Clock size={13} />}
+              {loading ? (
+                'Loading live data…'
+              ) : (
+                <>
+                  Last updated{' '}
+                  <span className="font-medium text-(--color-ink-soft)">{formatDateTime(lastUpdated)}</span>
+                </>
+              )}
+            </div>
+            <DateFilter preset={preset} customRange={customRange} onChange={handleDateChange} />
+          </div>
         </div>
       </header>
 
+      {error && (
+        <div className="border-b border-(--color-danger-soft) bg-(--color-danger-soft)">
+          <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 py-2 text-[12.5px] text-(--color-danger)">
+            <AlertTriangle size={14} className="shrink-0" />
+            <span>
+              Couldn't load the live sheet ({error}). Showing sample data instead.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {!error && isSample && (
+        <div className="border-b border-(--color-warning-soft) bg-(--color-warning-soft)">
+          <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 py-2 text-[12.5px] text-(--color-warning)">
+            <AlertTriangle size={14} className="shrink-0" />
+            <span>
+              This dashboard is currently showing <span className="font-semibold">sample data</span>, not live
+              figures. Connect the Lead Generation Google Sheet to ensure all numbers reflect actual performance.
+            </span>
+          </div>
+        </div>
+      )}
+
       <main className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-8">
         <ExecutiveSummary summary={summary} funnel={funnel} />
+        <FunnelConversion funnel={funnel} />
+        <RevenueKpis revenue={revenue} />
         <ChartsSection series={series} industryRows={industryRows} />
 
         <div className="grid gap-4 lg:grid-cols-3">
@@ -85,10 +134,14 @@ export default function App() {
 
         <IndustryPerformance rows={industryRows} />
         <CampaignPerformance rows={campaignRows} />
-        <WeeklyNotes reviews={WEEKLY_REVIEWS} />
+        <LeadDirectory leads={leadDirectory} />
+        {weeklyReviews.length > 0 && <WeeklyNotes reviews={weeklyReviews} />}
 
         <footer className="pb-4 pt-2 text-center text-[12px] text-(--color-ink-faint)">
-          Data source: Lead Generation Google Sheet · Manual updates · Built for Ros, Nandini &amp; Kailash
+          Data source: {isSample ? 'Sample data' : 'Lead Generation Google Sheet'} · Built for Ros, Nandini &amp;
+          Kailash
+          <br />
+          Last updated {formatDateTime(lastUpdated)}
         </footer>
       </main>
     </div>

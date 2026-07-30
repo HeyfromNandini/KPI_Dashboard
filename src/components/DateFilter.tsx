@@ -85,15 +85,15 @@ export function DateFilter({ preset, customRange, onChange }: DateFilterProps) {
               />
               <div className="flex items-center justify-between gap-2 border-t border-(--color-border) pt-2.5">
                 <span className="text-xs text-(--color-ink-faint)">
-                  {draft?.from && draft?.to
-                    ? formatRangeLabel({ from: draft.from, to: draft.to })
-                    : 'Select a start and end date'}
+                  {draft?.from
+                    ? formatRangeLabel({ from: draft.from, to: draft.to ?? draft.from })
+                    : 'Select a start date (and optionally an end date)'}
                 </span>
                 <button
-                  disabled={!draft?.from || !draft?.to}
+                  disabled={!draft?.from}
                   onClick={() => {
-                    if (draft?.from && draft?.to) {
-                      onChange('custom', { from: draft.from, to: draft.to });
+                    if (draft?.from) {
+                      onChange('custom', { from: draft.from, to: draft.to ?? draft.from });
                       setOpen(false);
                     }
                   }}

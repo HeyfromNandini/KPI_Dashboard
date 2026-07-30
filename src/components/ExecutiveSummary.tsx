@@ -29,7 +29,6 @@ const KPI_DEFS: KpiDef[] = [
     label: 'Companies Researched',
     icon: Search,
     tone: 'text-(--color-accent)',
-    funnelLabel: 'Companies Identified',
   },
   {
     key: 'emailsSent',
@@ -44,21 +43,21 @@ const KPI_DEFS: KpiDef[] = [
     label: 'Responses Received',
     icon: MessageSquareReply,
     tone: 'text-(--color-warning)',
-    funnelLabel: 'Responses Received',
+    funnelLabel: 'Responses',
   },
   {
     key: 'meetingsScheduled',
     label: 'Meetings Scheduled',
     icon: CalendarCheck2,
     tone: 'text-(--color-warning)',
-    funnelLabel: 'Meetings Scheduled',
+    funnelLabel: 'Meetings',
   },
   {
     key: 'proposalsSent',
     label: 'Proposals Sent',
     icon: FileText,
     tone: 'text-(--color-success)',
-    funnelLabel: 'Proposals Sent',
+    funnelLabel: 'Proposals',
   },
   {
     key: 'clientsWon',
@@ -70,11 +69,9 @@ const KPI_DEFS: KpiDef[] = [
 ];
 
 export function ExecutiveSummary({ summary, funnel }: { summary: Summary; funnel: FunnelStage[] }) {
-  const conversionByLabel = new Map<string, number | null>();
-  funnel.forEach((stage, i) => {
-    const prev = i > 0 ? funnel[i - 1].count : null;
-    conversionByLabel.set(stage.label, prev && prev > 0 ? (stage.count / prev) * 100 : null);
-  });
+  const conversionByLabel = new Map<string, number | null>(
+    funnel.map((stage) => [stage.label, stage.conversionFromPrev]),
+  );
 
   return (
     <section>

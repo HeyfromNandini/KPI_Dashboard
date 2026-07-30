@@ -33,18 +33,33 @@ export function computeExecutiveSummary(leads: Lead[], range: DateRange): Execut
 export interface FunnelStage {
   label: string;
   count: number;
+  /** % of the previous stage's count that reached this stage. Null for the first stage. */
+  conversionFromPrev: number | null;
+  /** % of the first stage's count that reached this stage. Null for the first stage. */
+  conversionFromFirst: number | null;
 }
 
 export function computeFunnel(leads: Lead[], range: DateRange): FunnelStage[] {
   const summary = computeExecutiveSummary(leads, range);
-  return [
-    { label: 'Companies Identified', count: summary.companiesResearched },
+  const rawStages = [
+    { label: 'Leads', count: summary.newLeads },
     { label: 'Emails Sent', count: summary.emailsSent },
-    { label: 'Responses Received', count: summary.responsesReceived },
-    { label: 'Meetings Scheduled', count: summary.meetingsScheduled },
-    { label: 'Proposals Sent', count: summary.proposalsSent },
+    { label: 'Responses', count: summary.responsesReceived },
+    { label: 'Meetings', count: summary.meetingsScheduled },
+    { label: 'Proposals', count: summary.proposalsSent },
     { label: 'Clients Won', count: summary.clientsWon },
   ];
+
+  const firstCount = rawStages[0].count;
+
+  return rawStages.map((stage, i) => {
+    const prevCount = i > 0 ? rawStages[i - 1].count : null;
+    return {
+      ...stage,
+      conversionFromPrev: i === 0 ? null : pctChange(stage.count, prevCount ?? 0),
+      conversionFromFirst: i === 0 ? null : pctChange(stage.count, firstCount),
+    };
+  });
 }
 
 export interface IndustryRow {
@@ -161,7 +176,45 @@ export function computeTimeSeries(leads: Lead[], range: DateRange): TimeSeriesPo
   return points;
 }
 
+/** Leads added in range, most recent first — used for the Lead Directory table. */
+export function computeLeadDirectory(leads: Lead[], range: DateRange): Lead[] {
+  return leads
+    .filter((l) => inRange(l.dateAdded, range))
+    .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+}
+
 export function pctChange(numerator: number, denominator: number): number | null {
   if (denominator === 0) return null;
   return (numerator / denominator) * 100;
+}
+
+export interface RevenueSummary {
+  /** Total value of deals still open (proposal sent, not yet won or lost) — cohort added in range. */
+  pipelineValue: number;
+  /** Total value of deals won, where the win date falls in range. */
+  revenueWon: number;
+  /** Count of deals won, where the win date falls in range. */
+  dealsWon: number;
+  /** Average value of won deals in range. */
+  avgDealSize: number;
+  /** Won / (Won + Lost) among deals that reached the proposal stage, in range. */
+  winRate: number | null;
+}
+
+export function computeRevenue(leads: Lead[], range: DateRange): RevenueSummary {
+  const cohort = leads.filter((l) => inRange(l.dateAdded, range));
+  const pipelineValue = cohort
+    .filter((l) => l.stage === 'Proposal Sent')
+    .reduce((sum, l) => sum + l.dealValue, 0);
+
+  const wonInRange = leads.filter((l) => inRange(l.wonDate, range));
+  const revenueWon = wonInRange.reduce((sum, l) => sum + l.dealValue, 0);
+  const dealsWon = wonInRange.length;
+  const avgDealSize = dealsWon > 0 ? revenueWon / dealsWon : 0;
+
+  const decidedInRange = cohort.filter((l) => l.stage === 'Won' || l.stage === 'Lost');
+  const wonInCohort = decidedInRange.filter((l) => l.stage === 'Won').length;
+  const winRate = decidedInRange.length > 0 ? (wonInCohort / decidedInRange.length) * 100 : null;
+
+  return { pipelineValue, revenueWon, dealsWon, avgDealSize, winRate };
 }

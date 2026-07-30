@@ -114,6 +114,23 @@ function addDays(d: Date, n: number): Date {
   return nd;
 }
 
+// Rough deal-size band per industry (USD), used only once a lead reaches Proposal Sent+.
+const DEAL_VALUE_RANGE: Record<Industry, [number, number]> = {
+  SaaS: [8000, 32000],
+  Healthcare: [15000, 55000],
+  FinTech: [20000, 70000],
+  'E-commerce': [6000, 22000],
+  Manufacturing: [18000, 60000],
+  'Real Estate': [10000, 35000],
+  Education: [5000, 18000],
+  Logistics: [12000, 40000],
+};
+
+function dealValueFor(industry: Industry): number {
+  const [min, max] = DEAL_VALUE_RANGE[industry];
+  return Math.round((min + rng() * (max - min)) / 500) * 500;
+}
+
 function generateLeads(count: number): Lead[] {
   const leads: Lead[] = [];
 
@@ -185,6 +202,9 @@ function generateLeads(count: number): Lead[] {
     const now = new Date();
     const clamp = (d: Date | null) => (d && d > now ? now : d);
 
+    // Deal value only exists once a proposal has actually gone out.
+    const dealValue = proposalDate ? dealValueFor(industry) : 0;
+
     leads.push({
       id: `lead-${i + 1}`,
       company: `${pick(COMPANY_PREFIXES)} ${pick(COMPANY_SUFFIXES)}`,
@@ -199,6 +219,7 @@ function generateLeads(count: number): Lead[] {
       wonDate: toISO(clamp(wonDate)),
       lostDate: toISO(clamp(lostDate)),
       stage,
+      dealValue,
     });
   }
 
