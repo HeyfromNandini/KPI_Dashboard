@@ -20,7 +20,10 @@ export function WeeklyNotes({ reviews }: { reviews: WeeklyReview[] }) {
 
   return (
     <section>
-      <SectionHeader title="Weekly Notes" subtitle="Free-form reflections captured each week" />
+      <SectionHeader
+        title="Weekly Notes"
+        subtitle="Manual reflections from your team (optional) — from the Weekly Reviews sheet tab"
+      />
       <div className="flex flex-col gap-3">
         {entries.map((review, idx) => {
           const isOpen = expanded === review.week;

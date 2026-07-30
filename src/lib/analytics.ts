@@ -201,6 +201,118 @@ export interface RevenueSummary {
   winRate: number | null;
 }
 
+export interface AutoInsights {
+  wins: string[];
+  bottlenecks: string[];
+  improvementActions: string[];
+}
+
+// What to suggest when a given funnel stage-to-stage transition is the weakest link.
+const STAGE_ACTION_HINTS: Record<string, string> = {
+  'Emails Sent': 'Increase outreach volume and follow-up cadence to keep leads moving into the funnel.',
+  Responses: 'Test shorter subject lines and more personalized openers to lift email response rates.',
+  Meetings: 'Follow up faster after a response — speed-to-lead strongly affects meeting bookings.',
+  Proposals: 'Shorten the gap between meeting and proposal delivery so momentum isn\u2019t lost.',
+  'Clients Won': 'Tighten proposal follow-up and negotiation cadence to close a higher share of proposals.',
+};
+
+function previousPeriod(range: DateRange): DateRange {
+  const spanMs = range.to.getTime() - range.from.getTime();
+  const to = new Date(range.from.getTime() - 1);
+  const from = new Date(to.getTime() - spanMs);
+  return { from, to };
+}
+
+/**
+ * Rule-based insights computed straight from real lead data — no manual write-up
+ * required. Compares the selected period against the immediately preceding period
+ * of equal length.
+ */
+export function computeAutoInsights(leads: Lead[], range: DateRange): AutoInsights {
+  const summary = computeExecutiveSummary(leads, range);
+  const funnel = computeFunnel(leads, range);
+  const industryRows = computeIndustryPerformance(leads, range);
+  const revenue = computeRevenue(leads, range);
+
+  const prevRange = previousPeriod(range);
+  const prevSummary = computeExecutiveSummary(leads, prevRange);
+  const prevFunnel = computeFunnel(leads, prevRange);
+
+  const wins: string[] = [];
+  const bottlenecks: string[] = [];
+  const improvementActions: string[] = [];
+
+  if (summary.newLeads === 0) {
+    return {
+      wins: ['No leads recorded in this period yet.'],
+      bottlenecks: ['Not enough data in this period to identify bottlenecks.'],
+      improvementActions: ['Add leads for this period, or widen the date range, to generate insights.'],
+    };
+  }
+
+  // Wins
+  if (summary.clientsWon > 0) {
+    const delta = summary.clientsWon - prevSummary.clientsWon;
+    const trend = delta > 0 ? ` (up from ${prevSummary.clientsWon})` : delta === 0 ? ' (same as last period)' : '';
+    wins.push(`Won ${summary.clientsWon} client${summary.clientsWon === 1 ? '' : 's'} this period${trend}.`);
+  }
+  if (revenue.revenueWon > 0) {
+    wins.push(`Generated ${revenue.revenueWon.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })} in closed-won revenue.`);
+  }
+  const bestIndustry = industryRows
+    .filter((r) => r.companies >= 3)
+    .map((r) => ({ ...r, winRate: (r.clients / r.companies) * 100 }))
+    .sort((a, b) => b.winRate - a.winRate)[0];
+  if (bestIndustry && bestIndustry.winRate > 0) {
+    wins.push(`${bestIndustry.industry} is converting best this period, at a ${bestIndustry.winRate.toFixed(0)}% win rate.`);
+  }
+  const overallConversion = funnel[funnel.length - 1]?.conversionFromFirst;
+  const prevOverallConversion = prevFunnel[prevFunnel.length - 1]?.conversionFromFirst;
+  if (overallConversion !== null && overallConversion !== undefined && prevOverallConversion !== null && prevOverallConversion !== undefined && overallConversion > prevOverallConversion) {
+    wins.push(`Overall Leads \u2192 Clients conversion improved to ${overallConversion.toFixed(1)}% (from ${prevOverallConversion.toFixed(1)}%).`);
+  }
+  if (wins.length === 0) {
+    wins.push('No closed-won deals yet this period \u2014 keep pushing proposals through the pipeline.');
+  }
+
+  // Bottlenecks: the weakest stage-to-stage conversion in the funnel.
+  const stagesWithConversion = funnel.filter((s) => s.conversionFromPrev !== null);
+  const weakest = stagesWithConversion.sort((a, b) => (a.conversionFromPrev ?? 100) - (b.conversionFromPrev ?? 100))[0];
+  const weakestIndex = weakest ? funnel.findIndex((s) => s.label === weakest.label) : -1;
+  if (weakest && weakest.conversionFromPrev !== null && weakestIndex > 0) {
+    bottlenecks.push(
+      `Biggest drop-off: only ${weakest.conversionFromPrev.toFixed(0)}% of "${funnel[weakestIndex - 1].label}" moved to "${weakest.label}".`,
+    );
+  }
+  if (summary.newLeads < prevSummary.newLeads) {
+    const pctDown = pctChange(prevSummary.newLeads - summary.newLeads, prevSummary.newLeads);
+    bottlenecks.push(`New leads are down ${pctDown ? pctDown.toFixed(0) : ''}% vs. the previous period (${summary.newLeads} vs. ${prevSummary.newLeads}).`);
+  }
+  if (summary.meetingsScheduled === 0 && summary.responsesReceived > 0) {
+    bottlenecks.push('Leads are responding but no meetings have been booked yet this period.');
+  }
+  const stuckProposals = leads.filter((l) => l.stage === 'Proposal Sent' && inRange(l.dateAdded, range)).length;
+  if (stuckProposals > 0) {
+    bottlenecks.push(`${stuckProposals} proposal${stuckProposals === 1 ? '' : 's'} sent with no decision yet.`);
+  }
+  if (bottlenecks.length === 0) {
+    bottlenecks.push('No major drop-off detected this period \u2014 the funnel is moving smoothly.');
+  }
+
+  // Improvement actions, tied to the weakest stage found above.
+  if (weakest && STAGE_ACTION_HINTS[weakest.label]) {
+    improvementActions.push(STAGE_ACTION_HINTS[weakest.label]);
+  }
+  if (stuckProposals > 0) {
+    improvementActions.push('Follow up on open proposals this week to move them to a decision.');
+  }
+  if (improvementActions.length === 0) {
+    improvementActions.push('Keep current outreach and follow-up cadence \u2014 performance is on track.');
+  }
+
+  return { wins, bottlenecks, improvementActions };
+}
+
 export function computeRevenue(leads: Lead[], range: DateRange): RevenueSummary {
   const cohort = leads.filter((l) => inRange(l.dateAdded, range));
   const pipelineValue = cohort

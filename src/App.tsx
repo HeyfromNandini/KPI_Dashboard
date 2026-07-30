@@ -9,9 +9,11 @@ import { LeadDirectory } from './components/LeadDirectory';
 import { Pipeline } from './components/Pipeline';
 import { ChartsSection } from './components/ChartsSection';
 import { ProgressTargets } from './components/ProgressTargets';
+import { AutoInsights } from './components/AutoInsights';
 import { WeeklyNotes } from './components/WeeklyNotes';
 import { useDashboardData } from './hooks/useDashboardData';
 import {
+  computeAutoInsights,
   computeCampaignPerformance,
   computeExecutiveSummary,
   computeFunnel,
@@ -48,6 +50,7 @@ export default function App() {
   const series = useMemo(() => computeTimeSeries(leads, range), [leads, range]);
   const revenue = useMemo(() => computeRevenue(leads, range), [leads, range]);
   const leadDirectory = useMemo(() => computeLeadDirectory(leads, range), [leads, range]);
+  const insights = useMemo(() => computeAutoInsights(leads, range), [leads, range]);
 
   const targets = useMemo(
     () => [
@@ -135,6 +138,7 @@ export default function App() {
         <IndustryPerformance rows={industryRows} />
         <CampaignPerformance rows={campaignRows} />
         <LeadDirectory leads={leadDirectory} />
+        <AutoInsights insights={insights} />
         {weeklyReviews.length > 0 && <WeeklyNotes reviews={weeklyReviews} />}
 
         <footer className="pb-4 pt-2 text-center text-[12px] text-(--color-ink-faint)">

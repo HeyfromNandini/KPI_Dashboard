@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { DayPicker, type DateRange as RDPRange } from 'react-day-picker';
 import 'react-day-picker/style.css';
 import { CalendarDays, ChevronDown } from 'lucide-react';
@@ -73,17 +73,28 @@ export function DateFilter({ preset, customRange, onChange }: DateFilterProps) {
           {open && (
             <div
               ref={popoverRef}
-              className="animate-rise absolute right-0 z-20 mt-2 rounded-2xl border border-(--color-border) bg-(--color-surface) p-3 shadow-(--shadow-pop)"
+              className="animate-rise absolute right-0 z-20 mt-2 flex max-h-[min(28rem,80vh)] w-max flex-col rounded-2xl border border-(--color-border) bg-(--color-surface) p-3 shadow-(--shadow-pop)"
             >
-              <DayPicker
-                mode="range"
-                selected={draft}
-                onSelect={setDraft}
-                defaultMonth={draft?.from ?? new Date()}
-                numberOfMonths={2}
-                className="text-sm"
-              />
-              <div className="flex items-center justify-between gap-2 border-t border-(--color-border) pt-2.5">
+              <div className="overflow-y-auto">
+                <DayPicker
+                  mode="range"
+                  selected={draft}
+                  onSelect={setDraft}
+                  defaultMonth={draft?.from ?? new Date()}
+                  numberOfMonths={1}
+                  className="text-sm"
+                  style={
+                    {
+                      '--rdp-day-width': '32px',
+                      '--rdp-day-height': '32px',
+                      '--rdp-day_button-width': '30px',
+                      '--rdp-day_button-height': '30px',
+                      '--rdp-nav-height': '2rem',
+                    } as CSSProperties
+                  }
+                />
+              </div>
+              <div className="flex shrink-0 items-center justify-between gap-2 border-t border-(--color-border) pt-2.5">
                 <span className="text-xs text-(--color-ink-faint)">
                   {draft?.from
                     ? formatRangeLabel({ from: draft.from, to: draft.to ?? draft.from })
