@@ -16,6 +16,34 @@ function normalizeUrl(url: string): string {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
+const OUTREACH_LABELS = ['1st', '2nd', '3rd', '4th', '5th'];
+
+function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function OutreachCell({ lead }: { lead: Lead }) {
+  const touches = [lead.emailSentDate, lead.followUpDate, lead.followUpDate2, lead.followUpDate3, lead.followUpDate4];
+  const sentCount = touches.filter(Boolean).length;
+  const tooltip = touches
+    .map((date, i) => `${OUTREACH_LABELS[i]} outreach: ${date ? formatShortDate(date) : 'not sent'}`)
+    .join('\n');
+
+  return (
+    <div title={tooltip} className="flex items-center gap-1.5">
+      <span className="text-[12.5px] font-medium text-(--color-ink-soft)">{sentCount}/5</span>
+      <div className="flex gap-0.5">
+        {touches.map((date, i) => (
+          <span
+            key={i}
+            className={`h-1.5 w-1.5 rounded-full ${date ? 'bg-(--color-accent)' : 'bg-(--color-border)'}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function LeadDirectory({ leads }: { leads: Lead[] }) {
   return (
     <section>
@@ -30,7 +58,7 @@ export function LeadDirectory({ leads }: { leads: Lead[] }) {
       />
       <Card className="animate-rise overflow-hidden">
         <div className="max-h-[420px] overflow-auto">
-          <table className="w-full min-w-[1080px] text-left text-sm">
+          <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="sticky top-0 bg-(--color-surface)">
               <tr className="border-b border-(--color-border) text-[12px] text-(--color-ink-faint)">
                 <th className="px-4 py-3 font-medium">Company</th>
@@ -40,13 +68,14 @@ export function LeadDirectory({ leads }: { leads: Lead[] }) {
                 <th className="px-4 py-3 font-medium">Booking Platform</th>
                 <th className="px-4 py-3 font-medium">Business Pain</th>
                 <th className="px-4 py-3 font-medium">Recommended Solution</th>
+                <th className="px-4 py-3 font-medium">Outreach</th>
                 <th className="px-4 py-3 font-medium">Stage</th>
               </tr>
             </thead>
             <tbody>
               {leads.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-(--color-ink-faint)">
+                  <td colSpan={9} className="px-4 py-8 text-center text-(--color-ink-faint)">
                     No leads for the selected period.
                   </td>
                 </tr>
@@ -86,6 +115,9 @@ export function LeadDirectory({ leads }: { leads: Lead[] }) {
                   </td>
                   <td className="max-w-[220px] px-4 py-3 text-[12.5px] text-(--color-ink-faint)">
                     {lead.recommendedSolution || '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <OutreachCell lead={lead} />
                   </td>
                   <td className="px-4 py-3">
                     <span

@@ -36,8 +36,16 @@ export interface Lead {
   subIndustry?: string;
   campaignId: string;
   dateAdded: string;
+  /** 1st outreach touch. */
   emailSentDate: string | null;
+  /** 2nd outreach touch (first follow-up). */
   followUpDate: string | null;
+  /** 3rd outreach touch. */
+  followUpDate2: string | null;
+  /** 4th outreach touch. */
+  followUpDate3: string | null;
+  /** 5th outreach touch. */
+  followUpDate4: string | null;
   responseDate: string | null;
   meetingDate: string | null;
   proposalDate: string | null;

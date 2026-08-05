@@ -142,6 +142,9 @@ function generateLeads(count: number): Lead[] {
 
     let emailSentDate: Date | null = null;
     let followUpDate: Date | null = null;
+    let followUpDate2: Date | null = null;
+    let followUpDate3: Date | null = null;
+    let followUpDate4: Date | null = null;
     let responseDate: Date | null = null;
     let meetingDate: Date | null = null;
     let proposalDate: Date | null = null;
@@ -158,6 +161,17 @@ function generateLeads(count: number): Lead[] {
       const followedUp = rng() < 0.55;
       if (followedUp) {
         followUpDate = addDays(emailSentDate, 3 + Math.floor(rng() * 4));
+
+        // Additional outreach touches, each less likely than the last.
+        if (rng() < 0.4) {
+          followUpDate2 = addDays(followUpDate, 3 + Math.floor(rng() * 4));
+          if (rng() < 0.35) {
+            followUpDate3 = addDays(followUpDate2, 3 + Math.floor(rng() * 4));
+            if (rng() < 0.3) {
+              followUpDate4 = addDays(followUpDate3, 3 + Math.floor(rng() * 4));
+            }
+          }
+        }
       }
 
       const responded = rng() < 0.32;
@@ -213,6 +227,9 @@ function generateLeads(count: number): Lead[] {
       dateAdded: toISO(dateAdded)!,
       emailSentDate: toISO(clamp(emailSentDate)),
       followUpDate: toISO(clamp(followUpDate)),
+      followUpDate2: toISO(clamp(followUpDate2)),
+      followUpDate3: toISO(clamp(followUpDate3)),
+      followUpDate4: toISO(clamp(followUpDate4)),
       responseDate: toISO(clamp(responseDate)),
       meetingDate: toISO(clamp(meetingDate)),
       proposalDate: toISO(clamp(proposalDate)),

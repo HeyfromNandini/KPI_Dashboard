@@ -11,19 +11,29 @@ const BAR_COLORS = [
   '#12875a',
 ];
 
-export function FunnelConversion({ funnel }: { funnel: FunnelStage[] }) {
+export function FunnelConversion({
+  funnel,
+  title = 'Funnel Conversion',
+  subtitle = 'Stage-to-stage conversion rate, so drop-off points are easy to spot',
+  overallLabel = 'Leads → Clients',
+}: {
+  funnel: FunnelStage[];
+  title?: string;
+  subtitle?: string;
+  overallLabel?: string;
+}) {
   const maxCount = Math.max(1, ...funnel.map((s) => s.count));
   const overall = funnel.length > 0 ? funnel[funnel.length - 1].conversionFromFirst : null;
 
   return (
     <section>
       <SectionHeader
-        title="Funnel Conversion"
-        subtitle="Stage-to-stage conversion rate, so drop-off points are easy to spot"
+        title={title}
+        subtitle={subtitle}
         action={
           overall !== null && (
             <div className="rounded-full bg-(--color-accent-soft) px-3 py-1 text-[12px] font-medium text-(--color-accent)">
-              {overall.toFixed(1)}% Leads → Clients
+              {overall.toFixed(1)}% {overallLabel}
             </div>
           )
         }

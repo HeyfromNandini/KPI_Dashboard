@@ -1,0 +1,8 @@
+Track 2nd-5th outreach touches and show them in the dashboard
+
+Add Follow Up 2/3/4 Date columns (5th outreach total, alongside the
+existing Email Sent + Follow Up dates) to the Lead type, sheet mapping,
+and mock data generator. Add a new "Outreach Persistence" funnel-style
+card showing how many leads received each successive touch, and a
+compact per-lead outreach progress indicator in the Lead Directory
+table.

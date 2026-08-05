@@ -19,6 +19,7 @@ import {
   computeFunnel,
   computeIndustryPerformance,
   computeLeadDirectory,
+  computeOutreachStages,
   computePipeline,
   computeRevenue,
   computeTimeSeries,
@@ -41,6 +42,7 @@ export default function App() {
 
   const summary = useMemo(() => computeExecutiveSummary(leads, range), [leads, range]);
   const funnel = useMemo(() => computeFunnel(leads, range), [leads, range]);
+  const outreachStages = useMemo(() => computeOutreachStages(leads, range), [leads, range]);
   const industryRows = useMemo(() => computeIndustryPerformance(leads, range), [leads, range]);
   const campaignRows = useMemo(
     () => computeCampaignPerformance(leads, campaigns, range),
@@ -125,6 +127,12 @@ export default function App() {
       <main className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-8">
         <ExecutiveSummary summary={summary} funnel={funnel} />
         <FunnelConversion funnel={funnel} />
+        <FunnelConversion
+          funnel={outreachStages}
+          title="Outreach Persistence"
+          subtitle="How many leads received each successive follow-up touch, regardless of response"
+          overallLabel="reached the 5th outreach"
+        />
         <RevenueKpis revenue={revenue} />
         <ChartsSection series={series} industryRows={industryRows} />
 

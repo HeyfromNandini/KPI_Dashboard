@@ -142,7 +142,18 @@ export function mapRowsToLeads(rows: Row[], campaigns: Campaign[]): Lead[] {
 
       const dateAdded = parseDate(get(row, 'date added', 'dateadded', 'created', 'created date', 'lead date'));
       const emailSentDate = parseDate(get(row, 'email sent date', 'emailsentdate', 'email sent'));
-      const followUpDate = parseDate(get(row, 'follow up date', 'followupdate', 'follow-up date'));
+      const followUpDate = parseDate(
+        get(row, 'follow up date', 'followupdate', 'follow-up date', '2nd outreach date', 'follow up 1 date'),
+      );
+      const followUpDate2 = parseDate(
+        get(row, 'follow up 2 date', 'followup2date', 'follow-up 2 date', '3rd outreach date'),
+      );
+      const followUpDate3 = parseDate(
+        get(row, 'follow up 3 date', 'followup3date', 'follow-up 3 date', '4th outreach date'),
+      );
+      const followUpDate4 = parseDate(
+        get(row, 'follow up 4 date', 'followup4date', 'follow-up 4 date', '5th outreach date'),
+      );
       const responseDate = parseDate(get(row, 'response date', 'responsedate', 'replied date'));
       const meetingDate = parseDate(get(row, 'meeting date', 'meetingdate', 'meeting scheduled date'));
       const proposalDate = parseDate(get(row, 'proposal date', 'proposaldate', 'proposal sent date'));
@@ -182,6 +193,9 @@ export function mapRowsToLeads(rows: Row[], campaigns: Campaign[]): Lead[] {
         dateAdded: dateAdded ?? new Date().toISOString(),
         emailSentDate,
         followUpDate,
+        followUpDate2,
+        followUpDate3,
+        followUpDate4,
         responseDate,
         meetingDate,
         proposalDate,

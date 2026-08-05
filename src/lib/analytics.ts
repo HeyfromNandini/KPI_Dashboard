@@ -62,6 +62,33 @@ export function computeFunnel(leads: Lead[], range: DateRange): FunnelStage[] {
   });
 }
 
+/**
+ * Tracks how many leads received each successive outreach touch (1st email, then
+ * 2nd/3rd/4th/5th follow-ups), regardless of whether they eventually respond. Useful for
+ * seeing outreach persistence and where follow-up effort tails off.
+ */
+export function computeOutreachStages(leads: Lead[], range: DateRange): FunnelStage[] {
+  const cohort = leads.filter((l) => inRange(l.dateAdded, range));
+  const rawStages = [
+    { label: '1st Outreach', count: cohort.filter((l) => l.emailSentDate).length },
+    { label: '2nd Outreach', count: cohort.filter((l) => l.followUpDate).length },
+    { label: '3rd Outreach', count: cohort.filter((l) => l.followUpDate2).length },
+    { label: '4th Outreach', count: cohort.filter((l) => l.followUpDate3).length },
+    { label: '5th Outreach', count: cohort.filter((l) => l.followUpDate4).length },
+  ];
+
+  const firstCount = rawStages[0].count;
+
+  return rawStages.map((stage, i) => {
+    const prevCount = i > 0 ? rawStages[i - 1].count : null;
+    return {
+      ...stage,
+      conversionFromPrev: i === 0 ? null : pctChange(stage.count, prevCount ?? 0),
+      conversionFromFirst: i === 0 ? null : pctChange(stage.count, firstCount),
+    };
+  });
+}
+
 export interface IndustryRow {
   industry: Industry;
   companies: number;
